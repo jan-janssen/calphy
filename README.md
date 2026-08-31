@@ -30,6 +30,24 @@ DOI: 10.1103/PhysRevMaterials.5.103801
 Download bibtex [here](https://journals.aps.org/prmaterials/export/10.1103/PhysRevMaterials.5.103801?type=bibtex&download=true)
 
 
+## License
+
+calphy is published and distributed under the **Academic Software Licence v1.0 (ASL)**,
+a reciprocal licence whose core terms match the GNU GPLv2 but which permits
+**academic non-commercial use only**. It is an available-source, not an open-source,
+licence. See [LICENSE](LICENSE) for the full terms.
+
+If you intend to use calphy commercially, you need a separate commercial licence.
+Please contact <sarath.menon@ruhr-uni-bochum.de> to enquire about commercial use rights.
+
+Releases up to and including 2.0.1 were distributed under a split ASL / BSD-3-Clause
+licence (and earlier releases under the GNU GPL). Those grants continue to apply to
+the versions they were published with; from 2.1.0 onwards calphy is ASL only.
+
+Note that calphy drives [LAMMPS](https://www.lammps.org/), which is licensed
+separately under the GNU GPLv2. calphy does not include LAMMPS.
+
+
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/calphy/badges/installer/conda.svg)](https://conda.anaconda.org/conda-forge)
 
 [![PyPI version](https://badge.fury.io/py/calphy.svg)](https://badge.fury.io/py/calphy)

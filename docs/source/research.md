@@ -13,4 +13,4 @@ The following research works employed `calphy`:
 | 2022  | ZnO | free energies | ML | [Goniakowski et. al.](https://doi.org/10.1021/acs.jpcc.2c06341)       |
 | 2019  | Ti, Si | phase diagram | EAM, SW | [Menon et. al.](https://doi.org/10.1103/PhysRevMaterials.5.103801)       |
 
-Missing works? Reach out to [us](mailto:s.menon@mpie.de).
+Missing works? Reach out to [us](mailto:sarath.menon@ruhr-uni-bochum.de).

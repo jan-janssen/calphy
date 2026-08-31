@@ -1,16 +1,17 @@
 [build-system]
-requires = ["setuptools>=64"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "calphy"
-version = "2.0.1"
+version = "2.1.0"
 description = "free energy calculation for python"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "LicenseRef-ASL-1.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [
-    { name = "Sarath Menon", email = "sarathmenon@mailbox.org" },
+    { name = "Sarath Menon", email = "sarath.menon@ruhr-uni-bochum.de" },
     { name = "Yury Lysogorskiy" },
     { name = "Ralf Drautz" },
 ]
