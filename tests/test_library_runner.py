@@ -98,6 +98,84 @@ def test_missing_pylammpsmpi_raises_helpful_error(tmp_path, monkeypatch):
 
 
 # --------------------------------------------------------------------------- #
+# External (caller-supplied) lmp sessions
+#
+# create_object is called once per stage of a job (once for run_averaging,
+# again for run_integration, ...), so a fresh LibraryRunner wraps the same
+# externally-supplied session on every stage. That runner must not build its
+# own session, must not activate MLIAP a second time, must reset the live
+# session's state (a later stage's session already has a box/atoms from an
+# earlier stage -- unlike a freshly-built internal LammpsLibrary), and must
+# not close a session it doesn't own when its own stage finishes.
+# --------------------------------------------------------------------------- #
+def test_constructor_with_external_lmp_uses_it_directly(tmp_path, fake_pylammpsmpi):
+    from calphy.library_runner import LibraryRunner
+
+    external = FakeLammpsLibrary(cores=2, working_directory=str(tmp_path))
+    run = LibraryRunner(cores=2, cmdargs="", directory=str(tmp_path), lmp=external)
+
+    assert run.lmp is external
+    assert not run._owns_lmp
+
+
+def test_constructor_with_external_lmp_issues_clear(tmp_path, fake_pylammpsmpi):
+    from calphy.library_runner import LibraryRunner
+
+    external = FakeLammpsLibrary(cores=1, working_directory=str(tmp_path))
+    LibraryRunner(cores=1, cmdargs="", directory=str(tmp_path), lmp=external)
+
+    assert external.commands == ["clear"]
+
+
+def test_constructor_with_external_lmp_skips_mliap_activation(
+    tmp_path, fake_pylammpsmpi, fake_lammps_mliap
+):
+    """_activate_mliap only runs for a session LibraryRunner itself built --
+    an external session is the caller's to configure."""
+    from calphy.library_runner import LibraryRunner
+
+    external = FakeLammpsLibrary(cores=1, working_directory=str(tmp_path))
+    LibraryRunner(cores=1, cmdargs="", directory=str(tmp_path), lmp=external)
+
+    assert external.lmp.activated == []
+
+
+def test_close_does_not_close_external_lmp(tmp_path, fake_pylammpsmpi):
+    from calphy.library_runner import LibraryRunner
+
+    external = FakeLammpsLibrary(cores=1, working_directory=str(tmp_path))
+    run = LibraryRunner(cores=1, cmdargs="", directory=str(tmp_path), lmp=external)
+
+    run.close()
+
+    assert not external.closed
+    assert run._closed  # this runner still considers itself done
+
+
+def test_external_lmp_survives_reuse_across_multiple_runners(tmp_path, fake_pylammpsmpi):
+    """Regression test for the actual multi-stage bug: a Solid/Alchemy job builds
+    a new LibraryRunner per stage (create_object is called once per stage), all
+    wrapping the same external lmp. Closing the first stage's runner must leave
+    the session usable by the second stage's runner -- before this fix, close()
+    unconditionally called lmp.close(), so the second stage inherited a dead
+    session and its very first command would fail against a real pylammpsmpi
+    LammpsLibrary."""
+    from calphy.library_runner import LibraryRunner
+
+    external = FakeLammpsLibrary(cores=1, working_directory=str(tmp_path))
+
+    stage_one = LibraryRunner(cores=1, cmdargs="", directory=str(tmp_path), lmp=external)
+    stage_one.command("run 100")
+    stage_one.close()
+
+    stage_two = LibraryRunner(cores=1, cmdargs="", directory=str(tmp_path), lmp=external)
+    stage_two.command("run 200")
+
+    assert not external.closed
+    assert "run 200" in external.commands
+
+
+# --------------------------------------------------------------------------- #
 # Command dispatch
 # --------------------------------------------------------------------------- #
 def test_commands_forwarded_immediately_and_recorded(tmp_path, fake_pylammpsmpi):
