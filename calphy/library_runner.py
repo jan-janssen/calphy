@@ -79,12 +79,28 @@ class LibraryRunner(BaseRunner):
         self.cmdargs = cmdargs
 
         if lmp is not None:
+            # Externally-supplied session: a fresh LibraryRunner is built for every
+            # stage (create_object is called once per stage), so this instance does
+            # not own the underlying session and must not close it -- it's shared
+            # across stages and its lifetime is the caller's responsibility.
             self.lmp = lmp
+            self._owns_lmp = False
+            # The session may already have a box/atoms defined from a previous
+            # stage on this same live process (unlike a freshly-built internal
+            # LammpsLibrary, which always starts clean). `clear` resets LAMMPS's
+            # in-memory state without restarting the process, so the init
+            # commands below (units/boundary/atom_style/timestep) are valid
+            # again -- otherwise LAMMPS rejects `units` once a box already
+            # exists ("ERROR: Units command after simulation box is defined").
+            # Safe to call unconditionally, including on the very first stage,
+            # where the session has nothing to clear yet.
+            self.lmp.command("clear")
         else:
             self.lmp = LammpsLibrary(
                 cores=cores, working_directory=directory, cmdargs=cmdargs
             )
             self._activate_mliap()
+            self._owns_lmp = True
 
     def _activate_mliap(self):
         """Register the mliappy coupling in the live session when available.
@@ -128,9 +144,17 @@ class LibraryRunner(BaseRunner):
         """No-op: the session is live and LAMMPS flushes fix output as it runs."""
 
     def close(self):
-        """End the pylammpsmpi session (flushes and closes the LAMMPS log)."""
+        """End the pylammpsmpi session (flushes and closes the LAMMPS log).
+
+        Only actually closes the underlying session if this runner owns it
+        (i.e. it built the LammpsLibrary itself). An externally-supplied
+        session is reused across every stage of a job -- closing it here
+        would kill it after the first stage and leave every later stage
+        (run_integration, etc.) holding a dead session.
+        """
         if not self._closed:
-            self.lmp.close()
+            if self._owns_lmp:
+                self.lmp.close()
             self._closed = True
 
     def rotate_logs(self, stage_name):
