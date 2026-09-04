@@ -152,6 +152,22 @@ def test_close_does_not_close_external_lmp(tmp_path, fake_pylammpsmpi):
     assert run._closed  # this runner still considers itself done
 
 
+def test_run_averaging_tolerates_a_late_avg_dat_write(make_calc, recorded_job, tmp_path):
+    """A cycle's avg.dat read can find the file without that cycle's data yet
+    (fix ave/time's write still in flight) -- run_averaging should wait for
+    the data rather than indexing an empty read."""
+    from calphy.solid import Solid
+
+    calc = make_calc("B1", tolerance={"pressure": 1e-12, "spring_constant": 1e12})
+    job, rec = recorded_job(Solid, calc, runner="library")
+    (tmp_path / "avg.dat").write_text(
+        "# Time-averaged data for fix 2\n"
+        "# TimeStep v_mlx v_mly v_mlz v_mpress v_mpe v_metotal v_mtemp\n"
+    )
+
+    job.run_averaging()
+
+
 def test_external_lmp_survives_reuse_across_multiple_runners(tmp_path, fake_pylammpsmpi):
     """Regression test for the actual multi-stage bug: a Solid/Alchemy job builds
     a new LibraryRunner per stage (create_object is called once per stage), all
